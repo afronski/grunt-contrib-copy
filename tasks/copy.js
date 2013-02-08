@@ -35,6 +35,9 @@ module.exports = function(grunt) {
       isExpandedPair = filePair.orig.expand || false;
 
       filePair.src.forEach(function(src) {
+        var contents,
+            readWriteOptions = { encoding: null };
+
         if (detectDestType(filePair.dest) === 'directory') {
           dest = (isExpandedPair) ? filePair.dest : unixifyPath(path.join(filePair.dest, src));
         } else {
@@ -45,8 +48,15 @@ module.exports = function(grunt) {
           grunt.log.writeln('Creating ' + dest.cyan);
           grunt.file.mkdir(dest);
         } else {
-          grunt.log.writeln('Copying ' + src.cyan + ' -> ' + dest.cyan);
-          grunt.file.copy(src, dest, copyOptions);
+          if (typeof(filePair.replacer) === "function") {
+            grunt.log.writeln('Copying with modification ' + src.yellow + ' -> ' + dest.yellow);
+            contents = grunt.file.read(src, readWriteOptions);
+            contents = filePair.replacer(contents.toString(), src);
+            grunt.file.write(dest, contents, readWriteOptions)
+          } else {
+            grunt.log.writeln('Copying ' + src.cyan + ' -> ' + dest.cyan);
+            grunt.file.copy(src, dest, copyOptions);
+          }
         }
       });
     });
